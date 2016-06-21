@@ -83,11 +83,11 @@ void repl( int argc, char** argv ) {
   dictionary theEnv;
 
   instructions primativeOps {
-    make_shared< ufBinOp >( new ufAddOp() ),
-      make_shared< ufBinOp >(  new ufSubOp() ),
-      make_shared< ufBinOp >( new ufMulOp() ),
-      make_shared< ufBinOp >( new ufDivOp() ),
-      make_shared< ufBinOp >( new ufExpOp() ),
+    make_shared< ufBinOp< int, ufInteger > >( new ufAddOp() ),
+      make_shared< ufBinOp< int, ufInteger > >(  new ufSubOp() ),
+      make_shared< ufBinOp< int, ufInteger > >( new ufMulOp() ),
+      make_shared< ufBinOp< int, ufInteger > >( new ufDivOp() ),
+      make_shared< ufBinOp< int, ufInteger > >( new ufExpOp() ),
       make_shared< ufAssignOp >(),
       make_shared< ufBeginBlock >(),
       make_shared< ufMkBlock >(),

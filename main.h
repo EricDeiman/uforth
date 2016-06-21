@@ -18,14 +18,16 @@ typedef vector< shared_ptr< ufObject > > instructions;
 typedef deque< shared_ptr< ufObject > > workStack;
 typedef unordered_map< string, shared_ptr< ufObject > > dictionary;
 
+template< typename T >
 class ufPrimOp {
  public:
   virtual ~ufPrimOp() {}
-  virtual int eval( int left, int right ) = 0;
+  virtual T eval( int left, int right ) = 0;
   virtual string str() = 0;
 };
 
-class ufAddOp : public ufPrimOp {
+
+class ufAddOp : public ufPrimOp< int > {
  public:
   int eval( int left, int right ) {
     return left + right;
@@ -36,7 +38,8 @@ class ufAddOp : public ufPrimOp {
   }
 };
 
-class ufSubOp : public ufPrimOp {
+
+class ufSubOp : public ufPrimOp< int > {
  public:
   int eval( int left, int right ) {
     return left - right;
@@ -47,7 +50,8 @@ class ufSubOp : public ufPrimOp {
   }
 };
 
-class ufMulOp : public ufPrimOp {
+
+class ufMulOp : public ufPrimOp< int > {
  public:
   int eval( int left, int right ) {
     return left * right;
@@ -58,7 +62,8 @@ class ufMulOp : public ufPrimOp {
   }
 };
 
-class ufDivOp : public ufPrimOp {
+
+class ufDivOp : public ufPrimOp< int > {
  public:
   int eval( int left, int right ) {
     return left / right;
@@ -69,7 +74,8 @@ class ufDivOp : public ufPrimOp {
   }
 };
 
-class ufExpOp : public ufPrimOp {
+
+class ufExpOp : public ufPrimOp< int > {
  public:
   int eval( int left, int right ) {
     return static_cast< int >( pow( left, right ) );
@@ -77,6 +83,72 @@ class ufExpOp : public ufPrimOp {
 
   string str() {
     return "^";
+  }
+};
+
+class ufLtOp : public ufPrimOp< bool > {
+ public:
+  bool eval( int left, int right ) {
+    return left < right;
+  }
+
+  string str() {
+    return "<";
+  }
+};
+
+class ufLeOp : public ufPrimOp< bool > {
+ public:
+  bool eval( int left, int right ) {
+    return left <= right;
+  }
+
+  string str() {
+    return "<=";
+  }
+};
+
+class ufGtOp : public ufPrimOp< bool > {
+ public:
+  bool eval( int left, int right ) {
+    return left > right;
+  }
+
+  string str() {
+    return ">";
+  }
+};
+
+class GeOp : public ufPrimOp< bool > {
+ public:
+  bool eval( int left, int right ) {
+    return left >= right;
+  }
+
+  string str() {
+    return ">=";
+  }
+};
+
+class EqOp : public ufPrimOp< bool > {
+ public:
+  bool eval( int left, int right ) {
+    return left == right;
+  }
+
+  string str() {
+    return "==";
+  }
+};
+
+class NeqOp : public ufPrimOp< bool > {
+ public:
+  bool eval( int left, int right ) {
+    return left != right;
+  }
+
+  string str() {
+    return "!=";
   }
 };
 
@@ -89,7 +161,7 @@ class ufObject {
 
 class ufSymbol : public ufObject {
  public:
-  ufSymbol( string s ) : value( s ) {}
+ ufSymbol( string s ) : value( s ) {}
   ~ufSymbol() {}
 
   void eval( workStack& theStack, dictionary& theEnv ) {
@@ -98,7 +170,7 @@ class ufSymbol : public ufObject {
       b->eval( theStack, theEnv );
     }
     else {
-    theStack.push_front( make_shared< ufSymbol >( value ) );
+      theStack.push_front( make_shared< ufSymbol >( value ) );
     }
   }
 
@@ -130,10 +202,11 @@ class ufInteger : public ufObject {
   int value;
 };
 
+template< typename T, typename U >
 class ufBinOp : public ufObject {
  public:
 
- ufBinOp( ufPrimOp* pop ) : op( pop ) {}
+ ufBinOp( ufPrimOp< T >* pop ) : op( pop ) {}
 
   void eval( workStack& theStack, dictionary& ) {
     auto right = theStack.front();
@@ -144,7 +217,7 @@ class ufBinOp : public ufObject {
     int rInt = static_cast< ufInteger* >( right.get() )->val();
     int lInt = static_cast< ufInteger* >( left.get() )->val();
 
-    theStack.push_front( make_shared< ufInteger >( op->eval( lInt, rInt ) ) );
+    theStack.push_front( make_shared< U >( op->eval( lInt, rInt ) ) );
   }
 
   string str() {
@@ -156,7 +229,7 @@ class ufBinOp : public ufObject {
   }
 
  protected:
-  ufPrimOp* op;
+  ufPrimOp< T >* op;
 };
 
 const string blockBegin = "{";
