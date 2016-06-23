@@ -12,6 +12,16 @@
 
 using namespace std;
 
+// http://www.stroustrup.com/bs_faq2.html#constraints
+template<class T, class B>
+struct Derived_from {
+  static void constraints(T* p __attribute__((unused))) {
+    B* pb __attribute__((unused)) = p;
+  }
+  Derived_from() { void(*p)(T*) __attribute__((unused)) = constraints; }
+};
+
+
 class ufObject;
 
 typedef vector< shared_ptr< ufObject > > instructions;
@@ -21,14 +31,18 @@ typedef unordered_map< string, shared_ptr< ufObject > > dictionary;
 template< typename T >
 class ufPrimOp {
  public:
+  typedef T base_type;
   virtual ~ufPrimOp() {}
   virtual T eval( int left, int right ) = 0;
   virtual string str() = 0;
 };
 
+class ufInteger;
 
 class ufAddOp : public ufPrimOp< int > {
  public:
+  typedef ufInteger value_type;
+
   int eval( int left, int right ) {
     return left + right;
   }
@@ -41,6 +55,8 @@ class ufAddOp : public ufPrimOp< int > {
 
 class ufSubOp : public ufPrimOp< int > {
  public:
+  typedef ufInteger value_type;
+
   int eval( int left, int right ) {
     return left - right;
   }
@@ -53,6 +69,8 @@ class ufSubOp : public ufPrimOp< int > {
 
 class ufMulOp : public ufPrimOp< int > {
  public:
+  typedef ufInteger value_type;
+
   int eval( int left, int right ) {
     return left * right;
   }
@@ -65,6 +83,8 @@ class ufMulOp : public ufPrimOp< int > {
 
 class ufDivOp : public ufPrimOp< int > {
  public:
+  typedef ufInteger value_type;
+
   int eval( int left, int right ) {
     return left / right;
   }
@@ -77,6 +97,8 @@ class ufDivOp : public ufPrimOp< int > {
 
 class ufExpOp : public ufPrimOp< int > {
  public:
+  typedef ufInteger value_type;
+
   int eval( int left, int right ) {
     return static_cast< int >( pow( left, right ) );
   }
@@ -86,8 +108,12 @@ class ufExpOp : public ufPrimOp< int > {
   }
 };
 
+class ufBoolean;
+
 class ufLtOp : public ufPrimOp< bool > {
  public:
+  typedef ufBoolean value_type;
+
   bool eval( int left, int right ) {
     return left < right;
   }
@@ -99,6 +125,8 @@ class ufLtOp : public ufPrimOp< bool > {
 
 class ufLeOp : public ufPrimOp< bool > {
  public:
+  typedef ufBoolean value_type;
+
   bool eval( int left, int right ) {
     return left <= right;
   }
@@ -110,6 +138,8 @@ class ufLeOp : public ufPrimOp< bool > {
 
 class ufGtOp : public ufPrimOp< bool > {
  public:
+  typedef ufBoolean value_type;
+
   bool eval( int left, int right ) {
     return left > right;
   }
@@ -119,8 +149,10 @@ class ufGtOp : public ufPrimOp< bool > {
   }
 };
 
-class GeOp : public ufPrimOp< bool > {
+class ufGeOp : public ufPrimOp< bool > {
  public:
+  typedef ufBoolean value_type;
+
   bool eval( int left, int right ) {
     return left >= right;
   }
@@ -130,8 +162,10 @@ class GeOp : public ufPrimOp< bool > {
   }
 };
 
-class EqOp : public ufPrimOp< bool > {
+class ufEqOp : public ufPrimOp< bool > {
  public:
+  typedef ufBoolean value_type;
+
   bool eval( int left, int right ) {
     return left == right;
   }
@@ -141,8 +175,10 @@ class EqOp : public ufPrimOp< bool > {
   }
 };
 
-class NeqOp : public ufPrimOp< bool > {
+class ufNeOp : public ufPrimOp< bool > {
  public:
+  typedef ufBoolean value_type;
+
   bool eval( int left, int right ) {
     return left != right;
   }
@@ -202,11 +238,9 @@ class ufInteger : public ufObject {
   int value;
 };
 
-template< typename T, typename U >
-class ufBinOp : public ufObject {
+template< typename T >
+class ufBinOp : public ufObject, Derived_from< T, ufPrimOp< typename T::base_type > > {
  public:
-
- ufBinOp( ufPrimOp< T >* pop ) : op( pop ) {}
 
   void eval( workStack& theStack, dictionary& ) {
     auto right = theStack.front();
@@ -217,19 +251,15 @@ class ufBinOp : public ufObject {
     int rInt = static_cast< ufInteger* >( right.get() )->val();
     int lInt = static_cast< ufInteger* >( left.get() )->val();
 
-    theStack.push_front( make_shared< U >( op->eval( lInt, rInt ) ) );
+    theStack.push_front( make_shared< typename T::value_type >( op.eval( lInt, rInt ) ) );
   }
 
   string str() {
-    return op->str();
-  }
-
-  ~ufBinOp() {
-    delete op;
+    return op.str();
   }
 
  protected:
-  ufPrimOp< T >* op;
+  T op;
 };
 
 const string blockBegin = "{";
@@ -289,7 +319,7 @@ class ufMkBlock : public ufObject {
   }
 
   string str() {
-    return "}";
+    return blockEnd;
   }
 };
 
@@ -352,51 +382,35 @@ class ufAssignOp : public ufObject {
   }
 };
 
-class ufBoolOp : public ufObject {
+class ufBoolean : public ufObject {
  public:
-  virtual void condEval( workStack&, dictionary& ) = 0;
-};
+  ufBoolean( bool b ) : value( b ) {}
 
-class ufTrueOp : public ufBoolOp {
- public:
-  void eval( workStack& theStack, dictionary& ) {
-    theStack.push_front( make_shared< ufTrueOp >() );
-  }
-
-  string str() {
-    return "true";
-  }
-
-  void condEval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, dictionary& theEnv ) {
     auto thenBlock = theStack.front();
     theStack.pop_front();
-
-    // ignore the else block
-    theStack.pop_front();
-
-    thenBlock->eval( theStack, theEnv );
-  }
-};
-
-class ufFalseOp : public ufBoolOp {
- public:
-  void eval( workStack& theStack, dictionary& ) {
-    theStack.push_front( make_shared< ufFalseOp >() );
-  }
-
-  string str() {
-    return "false";
-  }
-
-  void condEval( workStack& theStack, dictionary& theEnv ) {
-    // ignore the then block
-    theStack.pop_front();
-
     auto elseBlock = theStack.front();
     theStack.pop_front();
 
-    elseBlock->eval( theStack, theEnv );
+    if( value ) {
+      thenBlock->eval( theStack, theEnv );
+    }
+    else {
+      elseBlock->eval( theStack, theEnv );
+    }
   }
+
+  string str() {
+    if( value ) {
+      return "true";
+    }
+    else {
+      return "false";
+    }
+  }
+
+ protected:
+  bool value;
 };
 
 class ufIfOp : public ufObject {
@@ -404,8 +418,8 @@ class ufIfOp : public ufObject {
   void eval( workStack& theStack, dictionary& theEnv ) {
     auto cond = theStack.front();
     theStack.pop_front();
-    auto boolOp = static_cast< ufBoolOp* >( cond.get() );
-    boolOp->condEval( theStack, theEnv );
+
+    cond->eval( theStack, theEnv );
   }
 
   string str() {

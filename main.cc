@@ -69,6 +69,7 @@ workStack& eval( instructions& insns, workStack& theStack, dictionary& theEnv ) 
     }
   }
 
+  delete &insns;
   return theStack;
 }
 
@@ -83,19 +84,23 @@ void repl( int argc, char** argv ) {
   dictionary theEnv;
 
   instructions primativeOps {
-    make_shared< ufBinOp< int, ufInteger > >( new ufAddOp() ),
-      make_shared< ufBinOp< int, ufInteger > >(  new ufSubOp() ),
-      make_shared< ufBinOp< int, ufInteger > >( new ufMulOp() ),
-      make_shared< ufBinOp< int, ufInteger > >( new ufDivOp() ),
-      make_shared< ufBinOp< int, ufInteger > >( new ufExpOp() ),
+    make_shared< ufBinOp< ufAddOp > >(),
+      make_shared< ufBinOp< ufSubOp > >(),
+      make_shared< ufBinOp< ufMulOp > >(),
+      make_shared< ufBinOp< ufDivOp > >(),
+      make_shared< ufBinOp< ufExpOp > >(),
       make_shared< ufAssignOp >(),
       make_shared< ufBeginBlock >(),
       make_shared< ufMkBlock >(),
       make_shared< ufDupOp >(),
       make_shared< ufSwapOp >(),
       make_shared< ufPopOp >(),
-      make_shared< ufTrueOp >(),
-      make_shared< ufFalseOp >(),
+      make_shared< ufBinOp< ufLtOp > >(),
+      make_shared< ufBinOp< ufLeOp > >(),
+      make_shared< ufBinOp< ufGtOp > >(),
+      make_shared< ufBinOp< ufGeOp > >(),
+      make_shared< ufBinOp< ufEqOp > >(),
+      make_shared< ufBinOp< ufNeOp > >(),
       make_shared< ufIfOp >()
       };
 
