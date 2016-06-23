@@ -427,4 +427,44 @@ class ufIfOp : public ufObject {
   }
 };
 
+class ufBooleanOp : public ufObject {
+ public:
+ ufBooleanOp( bool v ) : value( v ) {}
+
+  void eval( workStack& theStack, dictionary& theEnv ) {
+    theStack.push_front( make_shared< ufBoolean >( value ) );
+  }
+
+  string str() {
+    if( value ) {
+      return "true";
+    }
+    else {
+      return "false";
+    }
+  }
+
+ protected:
+  bool value;
+};
+
+class ufLoopOp : public ufObject {
+ public:
+  void eval( workStack& theStack, dictionary& theEnv ) {
+    auto whileBlock = theStack.front();
+    theStack.pop_front();
+    auto block = static_cast< ufBlock* >( whileBlock.get() );
+
+    while( theStack.front()->str() == "true" ) {
+      theStack.pop_front();
+      block->eval( theStack, theEnv );
+    }
+    theStack.pop_front(); // eat the "false"
+  }
+
+  string str() {
+    return "loop";
+  }
+};
+
 #endif

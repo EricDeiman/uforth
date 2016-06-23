@@ -101,7 +101,10 @@ void repl( int argc, char** argv ) {
       make_shared< ufBinOp< ufGeOp > >(),
       make_shared< ufBinOp< ufEqOp > >(),
       make_shared< ufBinOp< ufNeOp > >(),
-      make_shared< ufIfOp >()
+      make_shared< ufIfOp >(),
+      make_shared< ufBooleanOp >( true ),
+      make_shared< ufBooleanOp >( false ),
+      make_shared< ufLoopOp >()
       };
 
   for( auto o : primativeOps ) {
