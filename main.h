@@ -14,12 +14,12 @@ using namespace std;
 
 // http://www.stroustrup.com/bs_faq2.html#constraints
 template<class T, class B>
-struct Derived_from {
-  static void constraints(T* p __attribute__((unused))) {
-    B* pb __attribute__((unused)) = p;
-  }
-  Derived_from() { void(*p)(T*) __attribute__((unused)) = constraints; }
-};
+  struct Derived_from {
+    static void constraints(T* p __attribute__((unused))) {
+      B* pb __attribute__((unused)) = p;
+    }
+    Derived_from() { void(*p)(T*) __attribute__((unused)) = constraints; }
+  };
 
 
 class ufObject;
@@ -276,12 +276,33 @@ class ufBeginBlock : public ufObject {
   }
 };
 
+enum modes { evaluate, define };
+
 class ufBlock : public ufObject {
  public:
 
   void eval( workStack& theStack, dictionary& theEnv ) {
+    modes mode = evaluate;
+    int blockDepth = 0;
+
     for( auto i : insns ) {
-      i->eval( theStack, theEnv );
+      if( i->str() == blockBegin ) {
+        blockDepth++;
+      }
+      else if( i->str() == blockEnd ) {
+        blockDepth--;
+      }
+
+      mode = blockDepth ? define : evaluate;
+
+      switch( mode ) {
+      case evaluate:
+        i->eval( theStack, theEnv );
+        break;
+      case define:
+        theStack.push_front( i );
+        break;
+      }
     }
   }
 
@@ -310,13 +331,24 @@ class ufMkBlock : public ufObject {
  public:
   void eval( workStack& theStack, dictionary& ) {
     auto function = make_shared< ufBlock >();
-    while( theStack.front()->str() != blockBegin )  {
-      function->addIns( theStack.front() );
-      theStack.pop_front();
+    int blockDepth = 1;
+
+    while( blockDepth ) {
+      if( theStack.front()->str() == blockBegin ) {
+        blockDepth--;
+      }
+      else if( theStack.front()->str() == blockEnd ) {
+        blockDepth++;
+      }
+
+      if( blockDepth ) {
+        function->addIns( theStack.front() );
+        theStack.pop_front();
+      }
     }
     theStack.pop_front(); // eat the "("
-    theStack.push_front( shared_ptr< ufObject >( function ) );
-  }
+    theStack.push_front( function );
+}
 
   string str() {
     return blockEnd;
@@ -382,9 +414,12 @@ class ufAssignOp : public ufObject {
   }
 };
 
+const string strue = "true";
+const string sfalse = "false";
+
 class ufBoolean : public ufObject {
  public:
-  ufBoolean( bool b ) : value( b ) {}
+ ufBoolean( bool b ) : value( b ) {}
 
   void eval( workStack& theStack, dictionary& theEnv ) {
     auto thenBlock = theStack.front();
@@ -402,10 +437,10 @@ class ufBoolean : public ufObject {
 
   string str() {
     if( value ) {
-      return "true";
+      return strue;
     }
     else {
-      return "false";
+      return sfalse;
     }
   }
 
@@ -416,10 +451,16 @@ class ufBoolean : public ufObject {
 class ufIfOp : public ufObject {
  public:
   void eval( workStack& theStack, dictionary& theEnv ) {
-    auto cond = theStack.front();
-    theStack.pop_front();
+    auto elseBlock = theStack.front(); theStack.pop_front();
+    auto thenBlock = theStack.front(); theStack.pop_front();
+    auto cond = theStack.front(); theStack.pop_front();
 
-    cond->eval( theStack, theEnv );
+    if( cond->str() == strue ) {
+      thenBlock->eval( theStack, theEnv );
+    }
+    else if( cond->str() == sfalse ) {
+      elseBlock->eval( theStack, theEnv );
+    }
   }
 
   string str() {
@@ -437,10 +478,10 @@ class ufBooleanOp : public ufObject {
 
   string str() {
     if( value ) {
-      return "true";
+      return strue;
     }
     else {
-      return "false";
+      return sfalse;
     }
   }
 
@@ -455,7 +496,7 @@ class ufLoopOp : public ufObject {
     theStack.pop_front();
     auto block = static_cast< ufBlock* >( whileBlock.get() );
 
-    while( theStack.front()->str() == "true" ) {
+    while( theStack.front()->str() == strue ) {
       theStack.pop_front();
       block->eval( theStack, theEnv );
     }

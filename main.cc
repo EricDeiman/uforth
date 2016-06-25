@@ -44,8 +44,6 @@ instructions& read( string prompt, ostream& output, istream& input ) {
 }
 
 workStack& eval( instructions& insns, workStack& theStack, dictionary& theEnv ) {
-  enum modes { evaluate, define };
-
   modes mode = evaluate;
   int blockDepth = 0;
 
