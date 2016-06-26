@@ -108,6 +108,19 @@ class ufExpOp : public ufPrimOp< int > {
   }
 };
 
+class ufModOp : public ufPrimOp< int > {
+ public:
+  typedef ufInteger value_type;
+
+  int eval( int left, int right ) {
+    return left % right;
+  }
+
+  string str() {
+    return "%";
+  }
+};
+
 class ufBoolean;
 
 class ufLtOp : public ufPrimOp< bool > {
@@ -236,6 +249,23 @@ class ufInteger : public ufObject {
 
  protected:
   int value;
+};
+
+class ufNegOp : public ufObject {
+ public:
+  void eval( workStack& theStack, dictionary& ) {
+    auto data = theStack.front();
+    theStack.pop_front();
+
+    int rData = static_cast< ufInteger* >( data.get() )->val();
+
+    theStack.push_front( make_shared< ufInteger >( -1 * rData ) );
+  }
+
+  string str() {
+    return "~";
+  }
+
 };
 
 template< typename T >

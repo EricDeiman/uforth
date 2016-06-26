@@ -87,6 +87,8 @@ void repl( int argc, char** argv ) {
       make_shared< ufBinOp< ufMulOp > >(),
       make_shared< ufBinOp< ufDivOp > >(),
       make_shared< ufBinOp< ufExpOp > >(),
+      make_shared< ufBinOp< ufModOp > >(),
+      make_shared< ufNegOp >(),
       make_shared< ufAssignOp >(),
       make_shared< ufBeginBlock >(),
       make_shared< ufMkBlock >(),
