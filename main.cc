@@ -16,7 +16,7 @@ instructions& read( string prompt, ostream& output, istream& input ) {
   stringbuf buffer;
 
   if( prompt.size() ) {
-    output << prompt;    
+    output << prompt;
   }
   input.get( buffer );
   input.ignore( 1 ); // eat the \n

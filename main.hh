@@ -14,12 +14,12 @@ using namespace std;
 
 // http://www.stroustrup.com/bs_faq2.html#constraints
 template<class T, class B>
-  struct Derived_from {
-    static void constraints(T* p __attribute__((unused))) {
-      B* pb __attribute__((unused)) = p;
-    }
-    Derived_from() { void(*p)(T*) __attribute__((unused)) = constraints; }
-  };
+struct Derived_from {
+  static void constraints(T* p __attribute__((unused))) {
+    B* pb __attribute__((unused)) = p;
+  }
+  Derived_from() { void(*p)(T*) __attribute__((unused)) = constraints; }
+};
 
 
 class ufObject;
@@ -30,7 +30,7 @@ typedef unordered_map< string, shared_ptr< ufObject > > dictionary;
 
 template< typename T >
 class ufPrimOp {
- public:
+public:
   typedef T base_type;
   virtual ~ufPrimOp() {}
   virtual T eval( int left, int right ) = 0;
@@ -40,7 +40,7 @@ class ufPrimOp {
 class ufInteger;
 
 class ufAddOp : public ufPrimOp< int > {
- public:
+public:
   typedef ufInteger value_type;
 
   int eval( int left, int right ) {
@@ -54,7 +54,7 @@ class ufAddOp : public ufPrimOp< int > {
 
 
 class ufSubOp : public ufPrimOp< int > {
- public:
+public:
   typedef ufInteger value_type;
 
   int eval( int left, int right ) {
@@ -68,7 +68,7 @@ class ufSubOp : public ufPrimOp< int > {
 
 
 class ufMulOp : public ufPrimOp< int > {
- public:
+public:
   typedef ufInteger value_type;
 
   int eval( int left, int right ) {
@@ -82,7 +82,7 @@ class ufMulOp : public ufPrimOp< int > {
 
 
 class ufDivOp : public ufPrimOp< int > {
- public:
+public:
   typedef ufInteger value_type;
 
   int eval( int left, int right ) {
@@ -96,7 +96,7 @@ class ufDivOp : public ufPrimOp< int > {
 
 
 class ufExpOp : public ufPrimOp< int > {
- public:
+public:
   typedef ufInteger value_type;
 
   int eval( int left, int right ) {
@@ -109,7 +109,7 @@ class ufExpOp : public ufPrimOp< int > {
 };
 
 class ufModOp : public ufPrimOp< int > {
- public:
+public:
   typedef ufInteger value_type;
 
   int eval( int left, int right ) {
@@ -124,7 +124,7 @@ class ufModOp : public ufPrimOp< int > {
 class ufBoolean;
 
 class ufLtOp : public ufPrimOp< bool > {
- public:
+public:
   typedef ufBoolean value_type;
 
   bool eval( int left, int right ) {
@@ -137,7 +137,7 @@ class ufLtOp : public ufPrimOp< bool > {
 };
 
 class ufLeOp : public ufPrimOp< bool > {
- public:
+public:
   typedef ufBoolean value_type;
 
   bool eval( int left, int right ) {
@@ -150,7 +150,7 @@ class ufLeOp : public ufPrimOp< bool > {
 };
 
 class ufGtOp : public ufPrimOp< bool > {
- public:
+public:
   typedef ufBoolean value_type;
 
   bool eval( int left, int right ) {
@@ -163,7 +163,7 @@ class ufGtOp : public ufPrimOp< bool > {
 };
 
 class ufGeOp : public ufPrimOp< bool > {
- public:
+public:
   typedef ufBoolean value_type;
 
   bool eval( int left, int right ) {
@@ -176,7 +176,7 @@ class ufGeOp : public ufPrimOp< bool > {
 };
 
 class ufEqOp : public ufPrimOp< bool > {
- public:
+public:
   typedef ufBoolean value_type;
 
   bool eval( int left, int right ) {
@@ -189,7 +189,7 @@ class ufEqOp : public ufPrimOp< bool > {
 };
 
 class ufNeOp : public ufPrimOp< bool > {
- public:
+public:
   typedef ufBoolean value_type;
 
   bool eval( int left, int right ) {
@@ -202,15 +202,15 @@ class ufNeOp : public ufPrimOp< bool > {
 };
 
 class ufObject {
- public:
+public:
   virtual ~ufObject() {}
   virtual void eval( workStack&, dictionary& ) = 0;
   virtual string str() = 0;
 };
 
 class ufSymbol : public ufObject {
- public:
- ufSymbol( string s ) : value( s ) {}
+public:
+  ufSymbol( string s ) : value( s ) {}
   ~ufSymbol() {}
 
   void eval( workStack& theStack, dictionary& theEnv ) {
@@ -227,13 +227,13 @@ class ufSymbol : public ufObject {
     return value;
   }
 
- protected:
+protected:
   string value;
 };
 
 class ufInteger : public ufObject {
- public:
- ufInteger( int number ) : value( number ) {}
+public:
+  ufInteger( int number ) : value( number ) {}
 
   void eval( workStack& theStack, dictionary& ) {
     theStack.push_front( make_shared< ufInteger >( value ) );
@@ -247,12 +247,12 @@ class ufInteger : public ufObject {
     return value;
   }
 
- protected:
+protected:
   int value;
 };
 
 class ufNegOp : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& ) {
     auto data = theStack.front();
     theStack.pop_front();
@@ -270,7 +270,7 @@ class ufNegOp : public ufObject {
 
 template< typename T >
 class ufBinOp : public ufObject, Derived_from< T, ufPrimOp< typename T::base_type > > {
- public:
+public:
 
   void eval( workStack& theStack, dictionary& ) {
     auto right = theStack.front();
@@ -288,7 +288,7 @@ class ufBinOp : public ufObject, Derived_from< T, ufPrimOp< typename T::base_typ
     return op.str();
   }
 
- protected:
+protected:
   T op;
 };
 
@@ -296,7 +296,7 @@ const string blockBegin = "{";
 const string blockEnd = "}";
 
 class ufBeginBlock : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& ) {
     theStack.push_front( make_shared< ufBeginBlock >() );
   }
@@ -309,7 +309,7 @@ class ufBeginBlock : public ufObject {
 enum modes { evaluate, define };
 
 class ufBlock : public ufObject {
- public:
+public:
 
   void eval( workStack& theStack, dictionary& theEnv ) {
     modes mode = evaluate;
@@ -353,12 +353,12 @@ class ufBlock : public ufObject {
     insns.insert( insns.begin(), ins );
   }
 
- protected:
+protected:
   instructions insns;
 };
 
 class ufMkBlock : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& ) {
     auto function = make_shared< ufBlock >();
     int blockDepth = 1;
@@ -378,7 +378,7 @@ class ufMkBlock : public ufObject {
     }
     theStack.pop_front(); // eat the "("
     theStack.push_front( function );
-}
+  }
 
   string str() {
     return blockEnd;
@@ -386,7 +386,7 @@ class ufMkBlock : public ufObject {
 };
 
 class ufDupOp : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& ) {
     auto top = static_cast< ufInteger* >( theStack.front().get() )->val();
     auto dup = make_shared< ufInteger >( top );
@@ -399,7 +399,7 @@ class ufDupOp : public ufObject {
 };
 
 class ufSwapOp : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& ) {
     auto first = theStack.front();
     theStack.pop_front();
@@ -416,7 +416,7 @@ class ufSwapOp : public ufObject {
 };
 
 class ufPopOp : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& ) {
     theStack.pop_front();
   }
@@ -427,7 +427,7 @@ class ufPopOp : public ufObject {
 };
 
 class ufAssignOp : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& theEnv ) {
     auto right =  theStack.front();
     theStack.pop_front();
@@ -448,8 +448,8 @@ const string strue = "true";
 const string sfalse = "false";
 
 class ufBoolean : public ufObject {
- public:
- ufBoolean( bool b ) : value( b ) {}
+public:
+  ufBoolean( bool b ) : value( b ) {}
 
   void eval( workStack& theStack, dictionary& theEnv ) {
     auto thenBlock = theStack.front();
@@ -474,12 +474,12 @@ class ufBoolean : public ufObject {
     }
   }
 
- protected:
+protected:
   bool value;
 };
 
 class ufIfOp : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& theEnv ) {
     auto elseBlock = theStack.front(); theStack.pop_front();
     auto thenBlock = theStack.front(); theStack.pop_front();
@@ -499,8 +499,8 @@ class ufIfOp : public ufObject {
 };
 
 class ufBooleanOp : public ufObject {
- public:
- ufBooleanOp( bool v ) : value( v ) {}
+public:
+  ufBooleanOp( bool v ) : value( v ) {}
 
   void eval( workStack& theStack, dictionary& theEnv ) {
     theStack.push_front( make_shared< ufBoolean >( value ) );
@@ -515,12 +515,12 @@ class ufBooleanOp : public ufObject {
     }
   }
 
- protected:
+protected:
   bool value;
 };
 
 class ufLoopOp : public ufObject {
- public:
+public:
   void eval( workStack& theStack, dictionary& theEnv ) {
     auto whileBlock = theStack.front();
     theStack.pop_front();
