@@ -1,4 +1,4 @@
-#include "main.hh"
+#include "uforth.hh"
 
 int getInteger( string in ) {
   stringstream ss( in );

@@ -1,5 +1,5 @@
 CXXFLAGS = -std=c++11 -g -Wall
 
-default : main
+default : uforth
 
-main : main.cc main.hh
+main : uforth.cc uforth.hh
