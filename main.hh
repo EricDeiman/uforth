@@ -29,6 +29,34 @@ typedef vector< shared_ptr< ufObject > > instructions;
 typedef deque< shared_ptr< ufObject > > workStack;
 typedef unordered_map< string, shared_ptr< ufObject > > dictionary;
 
+class environment {
+public:
+  environment( environment* parent ) : outer( parent ) {}
+
+  shared_ptr< ufObject >& operator[]( const string& k ) {
+    if( core.count( k ) == 0 && outer && outer->count( k ) > 0 ) {
+      return outer->operator[]( k );
+    }
+    return core[ k ];
+  }
+
+  size_t count( const string& k ) {
+    if( core.count( k ) == 0 && outer ) {
+      return outer->count( k );
+    }
+    return core.count( k );
+  }
+
+  bool insert( pair< string, shared_ptr< ufObject > > val ) {
+    auto res = core.insert( val );
+    return res.second;
+  }
+
+protected:
+  unordered_map< string, shared_ptr< ufObject > > core;
+  environment* outer;
+};
+
 template< typename T >
 class ufPrimOp {
 public:
@@ -205,7 +233,7 @@ public:
 class ufObject {
 public:
   virtual ~ufObject() {}
-  virtual void eval( workStack&, dictionary& ) = 0;
+  virtual void eval( workStack&, environment& ) = 0;
   virtual string str() = 0;
 };
 
@@ -214,7 +242,7 @@ public:
   ufSymbol( string s ) : value( s ) {}
   ~ufSymbol() {}
 
-  void eval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, environment& theEnv ) {
     if( theEnv.count( value ) ) {
       auto b = theEnv[ value ];
       b->eval( theStack, theEnv );
@@ -236,7 +264,7 @@ class ufInteger : public ufObject {
 public:
   ufInteger( int number ) : value( number ) {}
 
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     theStack.push_front( make_shared< ufInteger >( value ) );
   }
 
@@ -254,7 +282,7 @@ protected:
 
 class ufNegOp : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     auto data = theStack.front();
     theStack.pop_front();
 
@@ -273,7 +301,7 @@ template< typename T >
 class ufBinOp : public ufObject, Derived_from< T, ufPrimOp< typename T::base_type > > {
 public:
 
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     assert( theStack.size() > 1 );
     auto right = theStack.front();
     theStack.pop_front();
@@ -299,7 +327,7 @@ const string blockEnd = "}";
 
 class ufBeginBlock : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     theStack.push_front( make_shared< ufBeginBlock >() );
   }
 
@@ -313,9 +341,10 @@ enum modes { evaluate, define };
 class ufBlock : public ufObject {
 public:
 
-  void eval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, environment& theEnv ) {
     modes mode = evaluate;
     int blockDepth = 0;
+    environment innerEnv( &theEnv );
 
     for( auto i : insns ) {
       if( i->str() == blockBegin ) {
@@ -329,7 +358,7 @@ public:
 
       switch( mode ) {
       case evaluate:
-        i->eval( theStack, theEnv );
+        i->eval( theStack, innerEnv );
         break;
       case define:
         theStack.push_front( i );
@@ -361,7 +390,7 @@ protected:
 
 class ufMkBlock : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     assert( theStack.size() > 0 );
     auto function = make_shared< ufBlock >();
     int blockDepth = 1;
@@ -390,7 +419,7 @@ public:
 
 class ufDupOp : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     assert( theStack.size() > 0 );
     auto top = static_cast< ufInteger* >( theStack.front().get() )->val();
     auto dup = make_shared< ufInteger >( top );
@@ -404,7 +433,7 @@ public:
 
 class ufSwapOp : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     assert( theStack.size() > 1 );
     auto first = theStack.front();
     theStack.pop_front();
@@ -422,7 +451,7 @@ public:
 
 class ufPopOp : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& ) {
+  void eval( workStack& theStack, environment& ) {
     assert( theStack.size() > 0 );
     theStack.pop_front();
   }
@@ -434,7 +463,7 @@ public:
 
 class ufAssignOp : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, environment& theEnv ) {
     assert( theStack.size() > 1 );
     auto right =  theStack.front();
     theStack.pop_front();
@@ -458,7 +487,7 @@ class ufBoolean : public ufObject {
 public:
   ufBoolean( bool b ) : value( b ) {}
 
-  void eval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, environment& theEnv ) {
     assert( theStack.size() > 1 );
     auto thenBlock = theStack.front();
     theStack.pop_front();
@@ -488,7 +517,7 @@ protected:
 
 class ufIfOp : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, environment& theEnv ) {
     assert( theStack.size() > 2 );
     auto elseBlock = theStack.front(); theStack.pop_front();
     auto thenBlock = theStack.front(); theStack.pop_front();
@@ -511,7 +540,7 @@ class ufBooleanOp : public ufObject {
 public:
   ufBooleanOp( bool v ) : value( v ) {}
 
-  void eval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, environment& theEnv ) {
     theStack.push_front( make_shared< ufBoolean >( value ) );
   }
 
@@ -530,7 +559,7 @@ protected:
 
 class ufLoopOp : public ufObject {
 public:
-  void eval( workStack& theStack, dictionary& theEnv ) {
+  void eval( workStack& theStack, environment& theEnv ) {
     assert( theStack.size() > 1 );
     auto whileBlock = theStack.front();
     theStack.pop_front();

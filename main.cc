@@ -43,7 +43,7 @@ instructions& read( string prompt, ostream& output, istream& input ) {
   return insns;
 }
 
-workStack& eval( instructions& insns, workStack& theStack, dictionary& theEnv ) {
+workStack& eval( instructions& insns, workStack& theStack, environment& theEnv ) {
   modes mode = evaluate;
   int blockDepth = 0;
 
@@ -79,7 +79,7 @@ void print( workStack& theStack, ostream& output ) {
 
 void repl( int argc, char** argv ) {
   workStack theStack;
-  dictionary theEnv;
+  environment theEnv( NULL );
 
   instructions primativeOps {
     make_shared< ufBinOp< ufAddOp > >(),
