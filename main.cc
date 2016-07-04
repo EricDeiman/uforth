@@ -1,4 +1,4 @@
-#include "main.h"
+#include "main.hh"
 
 int getInteger( string in ) {
   stringstream ss( in );
