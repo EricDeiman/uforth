@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <cmath>
 #include <memory>
+#include <cassert>
 
 using namespace std;
 
@@ -273,6 +274,7 @@ class ufBinOp : public ufObject, Derived_from< T, ufPrimOp< typename T::base_typ
 public:
 
   void eval( workStack& theStack, dictionary& ) {
+    assert( theStack.size() > 1 );
     auto right = theStack.front();
     theStack.pop_front();
     auto left = theStack.front();
@@ -360,6 +362,7 @@ protected:
 class ufMkBlock : public ufObject {
 public:
   void eval( workStack& theStack, dictionary& ) {
+    assert( theStack.size() > 0 );
     auto function = make_shared< ufBlock >();
     int blockDepth = 1;
 
@@ -388,6 +391,7 @@ public:
 class ufDupOp : public ufObject {
 public:
   void eval( workStack& theStack, dictionary& ) {
+    assert( theStack.size() > 0 );
     auto top = static_cast< ufInteger* >( theStack.front().get() )->val();
     auto dup = make_shared< ufInteger >( top );
     theStack.push_front( dup );
@@ -401,6 +405,7 @@ public:
 class ufSwapOp : public ufObject {
 public:
   void eval( workStack& theStack, dictionary& ) {
+    assert( theStack.size() > 1 );
     auto first = theStack.front();
     theStack.pop_front();
     auto second = theStack.front();
@@ -418,6 +423,7 @@ public:
 class ufPopOp : public ufObject {
 public:
   void eval( workStack& theStack, dictionary& ) {
+    assert( theStack.size() > 0 );
     theStack.pop_front();
   }
 
@@ -429,6 +435,7 @@ public:
 class ufAssignOp : public ufObject {
 public:
   void eval( workStack& theStack, dictionary& theEnv ) {
+    assert( theStack.size() > 1 );
     auto right =  theStack.front();
     theStack.pop_front();
 
@@ -452,6 +459,7 @@ public:
   ufBoolean( bool b ) : value( b ) {}
 
   void eval( workStack& theStack, dictionary& theEnv ) {
+    assert( theStack.size() > 1 );
     auto thenBlock = theStack.front();
     theStack.pop_front();
     auto elseBlock = theStack.front();
@@ -481,6 +489,7 @@ protected:
 class ufIfOp : public ufObject {
 public:
   void eval( workStack& theStack, dictionary& theEnv ) {
+    assert( theStack.size() > 2 );
     auto elseBlock = theStack.front(); theStack.pop_front();
     auto thenBlock = theStack.front(); theStack.pop_front();
     auto cond = theStack.front(); theStack.pop_front();
@@ -522,6 +531,7 @@ protected:
 class ufLoopOp : public ufObject {
 public:
   void eval( workStack& theStack, dictionary& theEnv ) {
+    assert( theStack.size() > 1 );
     auto whileBlock = theStack.front();
     theStack.pop_front();
     auto block = static_cast< ufBlock* >( whileBlock.get() );
