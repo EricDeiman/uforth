@@ -540,7 +540,7 @@ class ufBooleanOp : public ufObject {
 public:
   ufBooleanOp( bool v ) : value( v ) {}
 
-  void eval( workStack& theStack, environment& theEnv ) {
+  void eval( workStack& theStack, environment& ) {
     theStack.push_front( make_shared< ufBoolean >( value ) );
   }
 
